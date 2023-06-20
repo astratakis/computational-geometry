@@ -1,1 +1,3 @@
 *.zip
+testfiles/*
+__pycache__/*
