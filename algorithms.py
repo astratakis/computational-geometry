@@ -1,53 +1,57 @@
 from dcel import *
 
-def generate_monotone(polygon: DCEL) -> DCEL:
-    '''
-    Transforms a polygon into several monotone polygons.
-    '''
+import math
 
-def triangulate_monotone_polygon(result: DCEL, poly_face: Face) -> None:
+def calculate_angle_acb(a: tuple, b: tuple, c: tuple) -> float:
     '''
-    Triangulate a Y-monotone polygon.
+    Calculates the angle abc, where b is the middle point...
     '''
 
-    # Get the vertices that are the outer bound of the monotone polygon face.
-    vertices = poly_face.get_vertices()
-
-    # Initialize an empty queue with preallocated space to prepare for the merging of the chains...
-    queue = [None] * len(vertices)
-
-    # Get the upper point of the chains.
-    upper = max(
-        vertices,
-        lambda x: x[1]
-    )
-
-    # Get the lower point of the chains.
-    lower = min(
-        vertices,
-        lambda x: x[1]
-    )
-
-    # Create the chains
-
-    left_chain = []
-    right_chain = []
-
-def triangulate_simple_polygon(polygon: DCEL) -> DCEL:
-    '''
-    Triangulates a simple polygon. It first splits the initial polygon into several monotone polygons.
-    The 'splitting' does not create more DCELs, but the polygons are embeded into the initial DCEL as faces.
-    '''
-
-    # Step 1: Create monotone polygons.
-    result = generate_monotone(polygon)
-
-    # Step 2: Get all the faces of the monotone polygons that were creates. Notice that since the initial polygon is simple, it has only one face.
-    monotone_faces = result.faces.copy()
-    for face in monotone_faces:
-        if face.bounded is not True:
-            raise ValueError("Detected unbounded face in a simpmle polygon...")
-        else:
-            triangulate_monotone_polygon(result, face)
+    return 0
     
-    return result
+
+
+def get_angle_type(v: Vertex) -> str:
+
+    v_prev = v.outgoing_edge.prev.origin
+    v_next = v.outgoing_edge.twin.origin
+
+    v0 = v_prev.coords
+    v1 = v.coords
+    v2 = v_next.coords
+
+    if v0[0] == v1[0] and v1[0] == v2[0]:
+        return "colinear"
+    
+    theta = calculate_angle_acb(v0, v1, v2)
+
+    print('Prev:', v0)
+    print('Current:', v1)
+    print('Next:', v2)
+    print('\nAngle theta:', theta)
+    print()
+    
+
+
+
+def monotonize_simple_polygon(poly: DCEL) -> None:
+    '''
+    Splits the polygon into monotone polygons.
+    '''
+
+    # The algorithm used to create monotone polygons is a sweep line algorithm...
+
+    # First sort the vertices of the polygon in O(nlogn)
+    vertices = sorted(
+        poly.vertices,
+        key=lambda vertex: (vertex.coords[0], vertex.coords[1])
+    )
+
+    # Sweep line
+    for v in vertices:
+        get_angle_type(v)
+        
+
+        
+
+

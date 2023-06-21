@@ -27,7 +27,7 @@ n = len(x_values)
 
 recon = plt.figure()
 plt.scatter(x_values, y_values, s=1)
-plt.title('Crete Points')
+plt.title('Sample Points')
 plt.show()
 
 all_points = [(polygon.exterior.coords[i][0], polygon.exterior.coords[i][1]) for i in range(len(polygon.exterior.coords))]
@@ -38,7 +38,8 @@ plt.plot(x, y, '-')
 plt.title('Polyline construction')
 plt.show()
 
-poly = DCEL(all_points)
+poly = DCEL(all_points[::-1])
+
+monotonize_simple_polygon(poly)
 
 poly.__plot__()
-

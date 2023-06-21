@@ -97,7 +97,7 @@ class DCEL():
 
 
         # Step 1: Create the list of vertices...
-        for point in S:
+        for point in S[:-1]:
             self.vertices.append(Vertex(point))
 
         # Step 2: Create edges in clockwise rotation...
@@ -114,7 +114,14 @@ class DCEL():
             # Assign the newly created edge to the outgoing edge of the origin vertex.
             self.vertices[i].outgoing_edge = e
 
+            # Add the newly created edge to the list of edges...
             self.edges.append(e)
+        
+        # Dont forget to add the final edge. i.e. from the last vertex to the initial vertex
+        final_edge = Edge(self.vertices[-1])
+        final_edge.twin = Edge(self.vertices[0])
+        self.vertices[-1].outgoing_edge = final_edge
+        self.edges.append(final_edge)
 
         # Create references to the next pointers of the edges...
         for i in range(len(self.edges) - 1):
@@ -143,4 +150,8 @@ class DCEL():
         plt.plot(x, y, '-')
         plt.title('DCEL')
         plt.show()
-        
+
+    def insert_diagonal(v0: Vertex, v1: Vertex) -> None:
+        pass
+
+
