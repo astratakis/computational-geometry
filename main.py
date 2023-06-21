@@ -18,7 +18,7 @@ polygons = gdf['geometry']
 
 print(gdf)
 
-polygon = polygons[90]
+polygon = polygons[100]
 
 x_values = [polygon.exterior.coords[i][0] for i in range(len(polygon.exterior.coords))]
 y_values = [polygon.exterior.coords[i][1] for i in range(len(polygon.exterior.coords))]
