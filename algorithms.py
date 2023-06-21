@@ -171,3 +171,4 @@ def monotonize_simple_polygon(poly: DCEL) -> None:
                 # Inore the point if it is colinear with other points...
                 pass
             
+    

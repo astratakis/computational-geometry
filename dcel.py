@@ -38,7 +38,10 @@ class Edge():
     def __str__(self) -> str:
         prev_origin = "None" if self.prev is None else str(self.prev.origin)
         next_origin = "None" if self.next is None else str(self.next.origin)
-        return "Prev: " + prev_origin + " --> " + str(self.origin) + " --> " + next_origin
+        return prev_origin + " --> " + str(self.origin) + " --> " + next_origin
+    
+    def __repr__(self) -> str:
+        return self.__str__()
 
 class Face():
 
@@ -88,6 +91,16 @@ class Face():
                 self.bounded_edge = self.bounded_edge.next
 
         return edges
+    
+    def __plot__(self):
+        plt.figure()
+
+        edges = self.get_edges()
+
+        x, y = zip(*[edges[0].origin.coords] + [edges[i].next.origin.coords for i in range(len(edges))])
+
+        plt.plot(x, y, '-')
+        plt.show()
 
 class DCEL():
 
@@ -161,14 +174,68 @@ class DCEL():
             self.edges[i].face = face
 
     def __plot__(self) -> None:
-
-        plt.figure()
-        x, y = zip(*[self.edges[0].origin.coords] + [self.edges[i].next.origin.coords for i in range(len(self.edges))])
-        plt.plot(x, y, '-')
-        plt.title('DCEL')
-        plt.show()
+        
+        for face in self.faces:
+            face.__plot__()
 
     def insert_diagonal(self, v1: Vertex, v2: Vertex) -> None:
         print('Diagonal between:', v1, 'and', v2)
 
+        # Prepare the new edge to add
+        upper_vertex = None
+        lower_vertex = None
+
+        # Get the upper and lower vertices. Since the rotation of the inner vertices is counter clockwise, the diagonal should have origin the upper vertex.
+        if v1.is_above_of(v2):
+            upper_vertex = v1
+            lower_vertex = v2
+        else:
+            upper_vertex = v2
+            lower_vertex = v1
+
+        diagonal = Edge(upper_vertex)
+        diagonal.twin = Edge(lower_vertex)
+        diagonal.twin.twin = diagonal
+
+        upper_vertex.outgoing_edge.twin.next.twin.next = diagonal
+        lower_vertex.outgoing_edge.twin.next.twin.next = diagonal.twin
+
+        diagonal.next = lower_vertex.outgoing_edge
+        diagonal.twin.next = upper_vertex.outgoing_edge
+
+        diagonal.prev = upper_vertex.outgoing_edge.twin.next.twin
+        diagonal.twin.prev = lower_vertex.outgoing_edge.twin.next.twin
+
+        self.edges.append(diagonal)
+
+        face1 = Face(diagonal)
+        face2 = Face(diagonal.twin)
+
+        diagonal.face = face1
+        diagonal.twin.face = face2
+
+        previous_face = upper_vertex.outgoing_edge.face
+        self.faces.remove(previous_face)
+
+        current = diagonal.next
+
+        while True:
+            if current == diagonal:
+                break
+
+            current.face = face1
+            current = current.next
+
+        current = diagonal.twin.next
+
+        while True:
+            if current == diagonal.twin:
+                break
+
+            current.face = face2
+            current = current.next
+
+        self.faces.add(face1)
+        self.faces.add(face2)
+        
 
