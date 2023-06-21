@@ -42,7 +42,6 @@ def get_angle_type(v: Vertex) -> str:
     print('\nAngle theta:', theta)
     print()
 
-
     if theta < 180 and v.is_left_of(v_prev) and v.is_left_of(v_next):
         return "start"
     elif theta > 180 and v.is_left_of(v_prev) and v.is_left_of(v_next):
@@ -54,8 +53,6 @@ def get_angle_type(v: Vertex) -> str:
     else:
         return "regular"
     
-
-
 
 def monotonize_simple_polygon(poly: DCEL) -> None:
     '''
