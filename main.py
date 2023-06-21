@@ -9,7 +9,7 @@ from dcel import *
 from algorithms import *
 
 # load a .shp file
-gdf = gpd.read_file("testfiles/gshhg-shp-2.3.7/GSHHS_shp/h/GSHHS_h_L1.shp")
+gdf = gpd.read_file("testfiles/GSHHS_shp/f/GSHHS_f_L1.shp")
 
 #gdf.plot()
 #plt.show()

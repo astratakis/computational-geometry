@@ -14,11 +14,11 @@ class Vertex():
     def __str__(self) -> str:
         return str(self.coords)
     
-    def is_left_of(self, other) -> bool:
+    def is_above_of(self, other) -> bool:
         
-        if self.x < other.x:
+        if self.y > other.y:
             return True
-        if self.x == other.x and self.y < other.y:
+        if self.y == other.y and self.x < other.x:
             return True
         return False
     
@@ -118,6 +118,7 @@ class DCEL():
             # Create an edge that starts from the origin and its twin that starts from the destination.
             e = Edge(origin)
             e.twin = Edge(destination)
+            e.twin.twin = e
 
             # Assign the newly created edge to the outgoing edge of the origin vertex.
             self.vertices[i].outgoing_edge = e
@@ -128,6 +129,7 @@ class DCEL():
         # Dont forget to add the final edge. i.e. from the last vertex to the initial vertex
         final_edge = Edge(self.vertices[-1])
         final_edge.twin = Edge(self.vertices[0])
+        final_edge.twin.twin = final_edge
         self.vertices[-1].outgoing_edge = final_edge
         self.edges.append(final_edge)
 
@@ -140,6 +142,13 @@ class DCEL():
         for i in range(1, len(self.edges)):
             self.edges[i].prev = self.edges[i-1]
         self.edges[0].prev = self.edges[len(self.edges) - 1]
+
+        # Create reference to twins...
+
+        for i in range(len(self.edges)):
+            self.edges[i].twin.next = self.edges[i].prev.twin
+            self.edges[i].twin.prev = self.edges[i].next.twin
+            self.edges[i].twin.origin = self.edges[i].next.origin
 
         # Step 3: Create one Face, the face of the initial simple polygon
         face = Face(self.edges[0])
@@ -159,7 +168,7 @@ class DCEL():
         plt.title('DCEL')
         plt.show()
 
-    def insert_diagonal(v0: Vertex, v1: Vertex) -> None:
-        pass
+    def insert_diagonal(self, v1: Vertex, v2: Vertex) -> None:
+        print('Diagonal between:', v1, 'and', v2)
 
 
