@@ -1,15 +1,26 @@
 from dcel import *
 
-import math
+import numpy as np
+from numpy.linalg import norm
 
 def calculate_angle_acb(a: tuple, b: tuple, c: tuple) -> float:
     '''
     Calculates the angle abc, where b is the middle point...
     '''
 
-    return 0
-    
+    # Calculate vectors ba and bc and then calculate their dot product
+    ba = np.array(b) - np.array(a)
+    bc = np.array(b) - np.array(c)
 
+    # Calculate theta using the formula cos^-1 of dot product / product of norms...
+    # This has 2 solutions, therefore we need to check the sin too by the cross product.
+    theta = np.rad2deg(np.arccos(np.clip(np.dot(ba, bc) / (norm(ba) * norm(bc)), -1, 1)))
+
+    if np.cross(ba, -bc) < 0:
+        theta = (360 - theta) % 360
+
+    return theta
+    
 
 def get_angle_type(v: Vertex) -> str:
 
@@ -30,6 +41,18 @@ def get_angle_type(v: Vertex) -> str:
     print('Next:', v2)
     print('\nAngle theta:', theta)
     print()
+
+
+    if theta < 180 and v.is_left_of(v_prev) and v.is_left_of(v_next):
+        return "start"
+    elif theta > 180 and v.is_left_of(v_prev) and v.is_left_of(v_next):
+        return "split"
+    elif theta < 180 and (not v.is_left_of(v_prev)) and (not v.is_left_of(v_next)):
+        return "stop"
+    elif theta > 180 and (not v.is_left_of(v_prev)) and (not v.is_left_of(v_next)):
+        return "merge"
+    else:
+        return "regular"
     
 
 
@@ -49,7 +72,9 @@ def monotonize_simple_polygon(poly: DCEL) -> None:
 
     # Sweep line
     for v in vertices:
-        get_angle_type(v)
+        vertex_type = get_angle_type(v)
+
+        print("Type of vertex is:", vertex_type)
         
 
         

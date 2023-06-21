@@ -14,6 +14,14 @@ class Vertex():
     def __str__(self) -> str:
         return str(self.coords)
     
+    def is_left_of(self, other) -> bool:
+        
+        if self.x < other.x:
+            return True
+        if self.x == other.x and self.y < other.y:
+            return True
+        return False
+    
 class Edge():
     '''
     Implements an edge between 2 vertices. In this context an edge is a half edge.
