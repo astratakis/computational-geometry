@@ -175,8 +175,18 @@ class DCEL():
 
     def __plot__(self) -> None:
         
+        all_edges = []
         for face in self.faces:
-            face.__plot__()
+            face_edges = face.get_edges()
+
+            for fage in face_edges:
+                all_edges.append(fage)
+
+        x, y = zip(*[all_edges[i].origin.coords for i in range(len(all_edges))])
+
+        plt.figure()
+        plt.plot(x, y, '-')
+        plt.show()
 
     def insert_diagonal(self, v1: Vertex, v2: Vertex) -> None:
         print('Diagonal between:', v1, 'and', v2)
@@ -228,6 +238,8 @@ class DCEL():
 
         current = diagonal.twin.next
 
+
+
         while True:
             if current == diagonal.twin:
                 break
@@ -237,5 +249,8 @@ class DCEL():
 
         self.faces.add(face1)
         self.faces.add(face2)
+
+
+        self.__plot__()
         
 

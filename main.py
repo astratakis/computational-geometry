@@ -9,7 +9,7 @@ from dcel import *
 from algorithms import *
 
 # load a .shp file
-gdf = gpd.read_file("testfiles/GSHHS_shp/c/GSHHS_c_L1.shp")
+gdf = gpd.read_file("testfiles/GSHHS_shp/l/GSHHS_l_L1.shp")
 
 #gdf.plot()
 #plt.show()
@@ -18,7 +18,7 @@ polygons = gdf['geometry']
 
 print(gdf)
 
-polygon = polygons[100]
+polygon = polygons[90]
 
 x_values = [polygon.exterior.coords[i][0] for i in range(len(polygon.exterior.coords))]
 y_values = [polygon.exterior.coords[i][1] for i in range(len(polygon.exterior.coords))]
