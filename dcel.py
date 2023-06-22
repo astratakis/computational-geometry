@@ -1,256 +1,265 @@
+from shapely.geometry import polygon
+from itertools import pairwise
+
 import matplotlib.pyplot as plt
 
-class Vertex():
-    '''
-    Implements a normal vertex (or node) in Eucledian 2D Space
-    '''
+class Vertex:
 
-    def __init__(self, coords: tuple) -> None:
+    def __init__(self, coords: tuple):
+        self.coords = coords
         self.x = coords[0]
         self.y = coords[1]
-        self.coords = coords
         self.outgoing_edge = None
 
-    def __str__(self) -> str:
-        return str(self.coords)
-    
-    def is_above_of(self, other) -> bool:
-        
+    def is_above_of(self, other):
+
         if self.y > other.y:
             return True
         if self.y == other.y and self.x < other.x:
             return True
         return False
-    
-class Edge():
-    '''
-    Implements an edge between 2 vertices. In this context an edge is a half edge.
-    Meaning that it contains pointers to it's twin edge
-    '''
 
-    def __init__(self, origin: Vertex) -> None:
-        self.origin = origin        # It's origin point
-        self.twin = None            # It's twin edge (Basically an edge that ends in origin and starts from the destination of this edge)
-        self.face = None            # It's bounded face
-        self.next = None            # It's clockwise/counterclockwise next
-        self.prev = None            # Self explanatory...
-
-    def __str__(self) -> str:
-        prev_origin = "None" if self.prev is None else str(self.prev.origin)
-        next_origin = "None" if self.next is None else str(self.next.origin)
-        return prev_origin + " --> " + str(self.origin) + " --> " + next_origin
+    def __str__(self):
+        return str(self.coords)
     
     def __repr__(self) -> str:
         return self.__str__()
 
-class Face():
+class Face:
 
-    '''
-    The face of the polygon. This is also used to distinct the sub-polygons inside the DCEL data structure.
-    Each face points to a bounded edge. If you follow a clockwise rotation among the edges of this face, it is guaranteed that you will
-    return back to the initial edge.
-    '''
-
-    def __init__(self, bounded_edge: Edge = None) -> None:
-        self.bounded_edge = bounded_edge
-
-    # This function gets all the vertices that surround this face. The result is return as a list.
-    def get_vertices(self) -> list:
-        vertices = list()
-
-        vertices.append(self.bounded_edge.origin)
-
-        origin_vertex = self.bounded_edge.origin
-        self.bounded_edge = self.bounded_edge.next
-
-        while True:
-            if self.bounded_edge.origin == origin_vertex:
-                break
-            else:
-                vertices.append(self.bounded_edge.origin)
-                self.bounded_edge = self.bounded_edge.next
-
-        return vertices
+    def __init__(self):
+        self.boundary_edge = None
+        
+    def __str__(self) -> str:
+        return "Face"
     
+    def __repr__(self) -> str:
+        return self.__str__()
 
-    # This function returns all the edges that bound this face
-    def get_edges(self) -> list:
-
+    def get_surrounding_edges(self) -> list:
         edges = list()
 
-        edges.append(self.bounded_edge)
-
-        initial_edge = self.bounded_edge
-        self.bounded_edge = self.bounded_edge.next
+        initial = self.boundary_edge
+        current = initial.next
+        edges.append(initial)
 
         while True:
-            if initial_edge == self.bounded_edge:
+            if initial is current:
                 break
             else:
-                edges.append(self.bounded_edge)
-                self.bounded_edge = self.bounded_edge.next
+                edges.append(current)
+                current = current.next
 
         return edges
+
+class Edge:
+
+    def __init__(self, origin: Vertex = None, interior_face: Face = None):
+        self.origin = origin
+        self.interior_face = interior_face
+        self.twin = None
+        self.next = None
+        self.prev = None
+
+    def __str__(self):
+        return str(self.prev.origin + " --> " + self.origin + " --> " + self.next.origin)
     
-    def __plot__(self):
-        plt.figure()
+    def __repr__(self) -> str:
+        return self.__str__()
 
-        edges = self.get_edges()
+class Dcel:
 
-        x, y = zip(*[edges[0].origin.coords] + [edges[i].next.origin.coords for i in range(len(edges))])
-
-        plt.plot(x, y, '-')
-        plt.show()
-
-class DCEL():
-
-    def __init__(self, S = None) -> None:
+    def __init__(self):
         self.vertices = list()
         self.edges = list()
         self.faces = set()
 
-        # This is equal to not inserting an existing set of points as an argument to the DCEL
-        if S is None:
-            return
+    def __plot__(self) -> plt.Figure:
+
+        figure = plt.figure()
         
-        # Construct the DCEL from a simple polygon
-        # CAUTION! This supposes that the input polygon is Simlpe.
-
-
-        # Step 1: Create the list of vertices...
-        for point in S[:-1]:
-            self.vertices.append(Vertex(point))
-
-        # Step 2: Create edges in clockwise rotation...
-        for i in range(len(self.vertices) - 1):
-
-            # First get the origin and the destination of the inner edge.
-            origin = self.vertices[i]
-            destination = self.vertices[i+1]
-
-            # Create an edge that starts from the origin and its twin that starts from the destination.
-            e = Edge(origin)
-            e.twin = Edge(destination)
-            e.twin.twin = e
-
-            # Assign the newly created edge to the outgoing edge of the origin vertex.
-            self.vertices[i].outgoing_edge = e
-
-            # Add the newly created edge to the list of edges...
-            self.edges.append(e)
-        
-        # Dont forget to add the final edge. i.e. from the last vertex to the initial vertex
-        final_edge = Edge(self.vertices[-1])
-        final_edge.twin = Edge(self.vertices[0])
-        final_edge.twin.twin = final_edge
-        self.vertices[-1].outgoing_edge = final_edge
-        self.edges.append(final_edge)
-
-        # Create references to the next pointers of the edges...
-        for i in range(len(self.edges) - 1):
-            self.edges[i].next = self.edges[i+1]
-        self.edges[len(self.edges) - 1].next = self.edges[0]
-
-        # Create references to the prev pointers of the edges...
-        for i in range(1, len(self.edges)):
-            self.edges[i].prev = self.edges[i-1]
-        self.edges[0].prev = self.edges[len(self.edges) - 1]
-
-        # Create reference to twins...
-
-        for i in range(len(self.edges)):
-            self.edges[i].twin.next = self.edges[i].prev.twin
-            self.edges[i].twin.prev = self.edges[i].next.twin
-            self.edges[i].twin.origin = self.edges[i].next.origin
-
-        # Step 3: Create one Face, the face of the initial simple polygon
-        face = Face(self.edges[0])
-
-        # Add the face to the set.
-        self.faces.add(face)
-
-        # Finally dont forget to assign to all the edges that were created reference to the generated face i.e. the simple polygon
-        for i in range(len(self.edges)):
-            self.edges[i].face = face
-
-    def __plot__(self) -> None:
-        
-        all_edges = []
         for face in self.faces:
-            face_edges = face.get_edges()
+            if face.boundary_edge is None:
+                continue
+            face_edges = face.get_surrounding_edges()
 
-            for fage in face_edges:
-                all_edges.append(fage)
+            x, y = zip(*[face_edges[0].origin.coords] + [face_edges[i].next.origin.coords for i in range(len(face_edges))])
 
-        x, y = zip(*[all_edges[i].origin.coords for i in range(len(all_edges))])
+            plt.plot(x, y, '-', color='b')
 
-        plt.figure()
-        plt.plot(x, y, '-')
-        plt.show()
+        return figure
 
-    def insert_diagonal(self, v1: Vertex, v2: Vertex) -> None:
-        print('Diagonal between:', v1, 'and', v2)
+    def build_from_polygon(self, poly):
+        """ Build a dcel from a simple polygon (we assume there are no holes!)
 
-        # Prepare the new edge to add
-        upper_vertex = None
-        lower_vertex = None
+        Keyword arguments:
+        :param poly : A simple polygon
+        """
 
-        # Get the upper and lower vertices. Since the rotation of the inner vertices is counter clockwise, the diagonal should have origin the upper vertex.
-        if v1.is_above_of(v2):
-            upper_vertex = v1
-            lower_vertex = v2
-        else:
-            upper_vertex = v2
-            lower_vertex = v1
+        # Step 1: Vertex list creation  (Careful: exterior.coords returns a duplicate of the first vertex at the end!)
+        for coords in polygon.orient(poly).exterior.coords[:-1]:  # counter-clockwise traversal of poly vertices
+            self.vertices.append(Vertex(coords))
 
-        diagonal = Edge(upper_vertex)
-        diagonal.twin = Edge(lower_vertex)
-        diagonal.twin.twin = diagonal
+        # Step 2: half-edge list creation. Assignment of twins and vertices
+        for v_origin, v_des in pairwise(self.vertices):  # ccw traversal of poly vertices
+            h1 = Edge(v_origin)  # half-edge that bounds the interior face of the polygon
+            h2 = Edge(v_des)  # half-edge that bounds the exterior face of the polygon
+            h1.twin = h2
+            h2.twin = h1
+            v_origin.outgoing_edge = h1  # Following the definition of outgoing_edge
+            self.edges.append(h1)
+            self.edges.append(h2)
+        # Create half-edge connecting last vertex to the fist vertex (also create the twin)
+        h1 = Edge(self.vertices[-1])
+        h2 = Edge(self.vertices[0])
+        h1.twin = h2
+        h2.twin = h1
+        self.vertices[-1].outgoing_edge = h1
+        self.edges.append(h1)
+        self.edges.append(h2)
 
-        upper_vertex.outgoing_edge.twin.next.twin.next = diagonal
-        lower_vertex.outgoing_edge.twin.next.twin.next = diagonal.twin
+        # Step 3: Identification of next and prev edges
+        # Notice that in the vertex creation above, following the definition of outgoing_edge, incident edges
+        # are always edges that bound the interior face of the polygon. We use this and easily determine
+        # the next, prev edges bellow.
+        # ccw traversal of poly half-edges (h1, h2 are always twins, and h1 bounds interior of the polygon)
+        for h1, h2 in zip(self.edges[0::2], self.edges[1::2]):
+            h1_next = h2.origin.outgoing_edge
+            h2_prev = h1_next.twin
 
-        diagonal.next = lower_vertex.outgoing_edge
-        diagonal.twin.next = upper_vertex.outgoing_edge
+            h1.next = h1_next
+            h1_next.prev = h1
 
-        diagonal.prev = upper_vertex.outgoing_edge.twin.next.twin
-        diagonal.twin.prev = lower_vertex.outgoing_edge.twin.next.twin
+            h2.prev = h2_prev
+            h2_prev.next = h2
 
-        self.edges.append(diagonal)
+        # Step 4: Face assignment (2 faces)
+        start_inner_Edge = self.edges[0]
 
-        face1 = Face(diagonal)
-        face2 = Face(diagonal.twin)
-
-        diagonal.face = face1
-        diagonal.twin.face = face2
-
-        previous_face = upper_vertex.outgoing_edge.face
-        self.faces.remove(previous_face)
-
-        current = diagonal.next
-
+        # Bounded face
+        f = Face()
+        f.boundary_edge = start_inner_Edge
+        tmp_Edge = start_inner_Edge
         while True:
-            if current == diagonal:
+            tmp_Edge.interior_face = f
+            tmp_Edge = tmp_Edge.next
+            if tmp_Edge is start_inner_Edge:
+                break
+        self.faces.add(f)
+
+    def insert_diagonal(self, v1, v2, f):
+        """ Insert diagonal v1v2 in the dcel.
+
+        Keyword arguments:
+        :param v1 -- Vertex
+        :param v2 -- Vertex
+        :param f -- face that the diagonal v1v2 splits
+        :return: The inserted half-edge from v1 to v2
+        """
+
+        h1 = self.find_Edge_bounding_face_from_origin(v1, f)  # half-edge with origin v1 that bounds face f
+        h2 = self.find_Edge_bounding_face_from_origin(v2, f)  # half-edge with origin v2 that bounds face f
+
+        e1 = Edge(v1)  # half-edge from v1 to v2
+        e2 = Edge(v2)  # half-edge from v2 to v1
+        e1.twin = e2
+        e2.twin = e1
+        self.edges.append(e1)
+        self.edges.append(e2)
+
+        # For the following assignments a quick drawing with pen and paper would help to visualize.
+        # TODO: Generalize for complex polygons
+
+        # Step 1: Connect the next/next attributes of the new e1, e2 half-edges to dcel
+        e1.next = h2
+        e1.prev = h1.prev
+        e2.next = h1
+        e2.prev = h2.prev
+
+        # Step 2: Connect the Dcel to the new edges
+        h1.prev.next = e1
+        h1.prev = e2
+        h2.prev.next = e2
+        h2.prev = e1
+
+        # Step 3: Remove the old face (which was split in two) and create the two new faces and link them.
+        f1 = Face()  # face that is bounded by the newly created half-edge e1
+        f2 = Face()  # face that is bounded by the newly created half-edge e2
+        self.faces.add(f1)
+        self.faces.add(f2)
+        self.faces.remove(f)  # O(1) because faces is a set
+
+        f1.boundary_edge = e1
+        f2.boundary_edge = e2
+
+        # Loop around face f1 and assign every interior edge its new face
+        tmp_Edge = e1
+        while True:
+            tmp_Edge.interior_face = f1
+            tmp_Edge = tmp_Edge.next
+            if tmp_Edge is e1:
                 break
 
-            current.face = face1
-            current = current.next
-
-        current = diagonal.twin.next
-
-
-
+        # Loop around face f2 and assign every interior edge its new face
+        tmp_Edge = e2
         while True:
-            if current == diagonal.twin:
+            tmp_Edge.interior_face = f2
+            tmp_Edge = tmp_Edge.next
+            if tmp_Edge is e2:
                 break
 
-            current.face = face2
-            current = current.next
-
-        self.faces.add(face1)
-        self.faces.add(face2)
+        return e1
 
 
-        self.__plot__()
-        
+    @staticmethod
+    def find_all_vertices_bounding_face(f):
+        """ Given a face f return all vertices around the face in a list """
+        vertices = list()
+        tmp_Edge = f.boundary_edge
+        while True:
+            vertices.append(tmp_Edge.origin)
+            tmp_Edge = tmp_Edge.next
+            if tmp_Edge is f.boundary_edge:
+                break
+        return vertices
 
+    @staticmethod
+    def find_Edge_bounding_face_from_origin(v, f):
+        """ Given a vertex v and a face f return the half-edge that has as origin v and bounds f """
+        Edge = v.outgoing_edge
+        while Edge.interior_face is not f:
+            Edge = Edge.prev.twin
+        return Edge
+
+    @staticmethod
+    def find_edge_connecting_origin_dest(orig, dest):
+        """ Given a vertex orig and a vertex dest find the half-edge from orig to dest """
+        Edge = orig.outgoing_edge
+        while Edge.twin.origin is not dest:
+            Edge = Edge.prev.twin
+        return Edge
+
+    @staticmethod
+    def find_common_face_for_diagonal(v1, v2):
+        """ Given two vertices v1, v2 where we know for a fact that a diagonal v1v2 is valid, find distinct face
+        that will be cute in half by the diagonal """
+
+        # Step 1: Find all faces that have v1 in their perimeter
+        v1_faces = set()
+
+        # loop around all half-edges with origin v1 and store interior_faces
+        Edge = v1.outgoing_edge
+        while True:
+            v1_faces.add(Edge.interior_face)
+            Edge = Edge.prev.twin
+            if Edge is v1.outgoing_edge:
+                break
+
+        # loop around all half-edges with origin v2 and if the interior_face is in v1_faces (and is not the unbounded
+        # face) then return it. Remember: We know for a fact that this face exists and is distinct
+        # (because the diagonal v1v2 is valid)
+        Edge = v2.outgoing_edge
+        while True:
+            if Edge.interior_face in v1_faces and Edge.interior_face.boundary_edge is not None:
+                return Edge.interior_face
+            Edge = Edge.prev.twin
