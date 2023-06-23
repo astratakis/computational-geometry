@@ -6,7 +6,7 @@ from dcel import *
 from algorithms import *
 
 # load a .shp file
-gdf = gpd.read_file("testfiles/gshhg-shp-2.3.7/GSHHS_shp/f/GSHHS_f_L1.shp")
+gdf = gpd.read_file("testfiles/GSHHS_shp/f/GSHHS_f_L1.shp")
 
 #gdf.plot()
 #plt.show()
@@ -15,7 +15,7 @@ polygons = gdf['geometry']
 
 print(gdf)
 
-polygon = polygons[100]
+polygon = polygons[90]
 
 all_points = [(polygon.exterior.coords[i][0], polygon.exterior.coords[i][1]) for i in range(len(polygon.exterior.coords))]
 x, y = zip(*all_points)
@@ -24,11 +24,18 @@ figure = plt.figure()
 plt.plot(x, y, '-')
 plt.title('Polyline construction')
 
-poly = Dcel()
-poly.build_from_polygon(polygon)
+poly = Dcel(polygon)
 plt.show()
 
-triangulate_polygon(polygon=poly)
+monotonize(poly)
 
 figure = poly.__plot__()
+plt.title('Monotonized polygon')
 plt.show()
+
+triangulate_polygon(poly)
+
+figure = poly.__plot__()
+plt.title('Triangulated Polygon')
+plt.show()
+

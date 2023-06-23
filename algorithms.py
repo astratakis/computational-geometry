@@ -1,5 +1,5 @@
 from dcel import *
-from bst import insert, delete, find_edge_directly_to_the_left
+from bst import *
 import numpy as np
 from numpy.linalg import norm
 from numpy import arccos, clip, dot, array, cross, rad2deg
@@ -36,12 +36,6 @@ def get_angle_type(v: Vertex) -> str:
     
     theta = calculate_angle_acb(v0, v1, v2)
 
-    #print('Prev:', v0)
-    #print('Current:', v1)
-    #print('Next:', v2)
-    #print('\nAngle theta:', theta)
-    #print()
-
     if theta < 180 and v.is_above_of(v_prev) and v.is_above_of(v_next):
         return "start"
     elif theta > 180 and v.is_above_of(v_prev) and v.is_above_of(v_next):
@@ -56,7 +50,7 @@ def get_angle_type(v: Vertex) -> str:
 def monotonize(polygon: Dcel) -> None:
     
     # (This BST along with the 'helper' dictionary form the status of the sweep line algorithm)
-    root = None
+    tree = BinarySearchTree()
 
     assignment = {}
     helper = {}
@@ -70,57 +64,57 @@ def monotonize(polygon: Dcel) -> None:
         reverse=True
     )
 
-    assign_type_to_vertices(polygon, assignment)
-
+    for v in vertices:
+        assignment[v] = get_angle_type(v)
 
     for i, v_i in enumerate(vertices):
         print(f'Current value: {i}', end='\r')
         match assignment[v_i]:
-            case "start vertex":
+            case "start":
                 
                 e_i = v_i.outgoing_edge
-                root = insert(root, e_i, v_i)
+                tree.insert(e_i, v_i)
                 helper[e_i] = v_i
             
-            case "split vertex":
+            case "split":
                 
                 e_i = v_i.outgoing_edge
-                e_j = find_edge_directly_to_the_left(root, v_i)
+                e_j = tree.find_edge_directly_to_the_left(v_i)
 
                 polygon.insert_diagonal(v_i, helper[e_j], e_j.interior_face)
 
                 helper[e_j] = v_i
-                root = insert(root, e_i, v_i)
+                tree.insert(e_i, v_i)
                 helper[e_i] = v_i
 
-            case "end vertex":
+            case "stop":
 
                 e_i_minus_1 = v_i.outgoing_edge.twin.next.twin
 
-                if assignment[helper[e_i_minus_1]] == "merge vertex":
+                if assignment[helper[e_i_minus_1]] == "merge":
                     polygon.insert_diagonal(v_i, helper[e_i_minus_1], e_i_minus_1.interior_face)
-                root = delete(root, e_i_minus_1, v_i)
+                tree.delete(e_i_minus_1, v_i)
 
-            case "merge vertex":
+            case "merge":
                 
                 e_i_minus_1 = v_i.outgoing_edge.twin.next.twin  # e_(i-1)
 
-                if assignment[helper[e_i_minus_1]] == "merge vertex":  # if helper(e_(i-1)) is a merge vertex
+                if assignment[helper[e_i_minus_1]] == "merge":  # if helper(e_(i-1)) is a merge vertex
                     # Then insert the diagonal connecting v_i to helper(e_(i-1)) in the DCEL (which splits e_(i-1).interior_face)
                     polygon.insert_diagonal(v_i, helper[e_i_minus_1], e_i_minus_1.interior_face)
 
-                root = delete(root, e_i_minus_1, v_i)  # Delete e_(i-1) from BST when sweep line is at vertex v_i
+                tree.delete(e_i_minus_1, v_i)  # Delete e_(i-1) from BST when sweep line is at vertex v_i
 
                 # Search in BST to find the edge e_j directly left of v_i
-                e_j = find_edge_directly_to_the_left(root, v_i)
+                e_j = tree.find_edge_directly_to_the_left(v_i)
 
-                if assignment[helper[e_j]] == "merge vertex":  # if helper(e_j) is a merge vertex
+                if assignment[helper[e_j]] == "merge":  # if helper(e_j) is a merge vertex
                     # Then insert the diagonal connecting v_i to helper(e_j) in the DCEL (which splits e_j.interior_face)
                     polygon.insert_diagonal(v_i, helper[e_j], e_j.interior_face)
 
                 helper[e_j] = v_i  # Set helper(e_j) to v_i
 
-            case "regular vertex":
+            case "regular":
                 e_i = v_i.outgoing_edge  # e_i
                 e_i_minus_1 = e_i.twin.next.twin  # e_(i-1)
 
@@ -131,70 +125,22 @@ def monotonize(polygon: Dcel) -> None:
                 # if the interior of the polygon lies to the right of v_i. We are dealing with a regular vertex, thus,
                 # the interior of the polygon lies to the right of v_i only when v_(i-1) is above v_(i+1)
                 if v_i_minus_1.is_above_of(v_i_plus_1):
-                    if assignment[helper[e_i_minus_1]] == "merge vertex":  # if helper(e_(i-1)) is a merge vertex
+                    if assignment[helper[e_i_minus_1]] == "merge":  # if helper(e_(i-1)) is a merge vertex
                         # Then insert the diagonal connecting v_i to helper(e_(i-1)) in DCEL (which splits e_(i-1).interior_face)
                         polygon.insert_diagonal(v_i, helper[e_i_minus_1], e_i_minus_1.interior_face)
-                    root = delete(root, e_i_minus_1, v_i)  # Remove e_(i-1) from BST when sweep line is at vertex v_i
-                    root = insert(root, e_i, v_i)  # insert half-edge e_i to BST when sweep line is at vertex v_i
+                    tree.delete(e_i_minus_1, v_i)  # Remove e_(i-1) from BST when sweep line is at vertex v_i
+                    tree.insert(e_i, v_i)  # insert half-edge e_i to BST when sweep line is at vertex v_i
                     helper[e_i] = v_i
                 else:
                     # Search in BST to find the edge e_j directly left of v_i
-                    e_j = find_edge_directly_to_the_left(root, v_i)
-                    if assignment[helper[e_j]] == "merge vertex":  # if helper(e_j) is a merge vertex
+                    e_j = tree.find_edge_directly_to_the_left(v_i)
+                    if assignment[helper[e_j]] == "merge":  # if helper(e_j) is a merge vertex
                         # Then insert the diagonal connecting v_i to helper(e_j) in the DCEL (which splits e_j.interior_face)
                         polygon.insert_diagonal(v_i, helper[e_j], e_j.interior_face)
                     helper[e_j] = v_i
+            case "colinear":
 
-
-def assign_type_to_vertices(d, vertex_type):
-    """ Assign the type attribute to all dcel vertices.
-
-    Keyword arguments:
-    :param d : dcel
-    :param vertex_type : dictionary with key: Vertex, Value: The type of vertex  (To be assigned)
-    """
-    start_inner_edge = d.edges[0]  # we know for a fact edges[0] is a half-edge bounding the interior face
-
-    tmp_edge = start_inner_edge
-    while True:
-        # we are always assigning the type of v_b (the middle vertex)
-        assign_type_to_vertex(vertex_type, tmp_edge.prev.origin, tmp_edge.origin, tmp_edge.next.origin)
-        tmp_edge = tmp_edge.next
-        if tmp_edge is start_inner_edge:
-            break
-
-
-def assign_type_to_vertex(vertex_type, v_a, v_b, v_c):
-
-    """ Assign the type attribute to a dcel vertex. We assign type to v_b only.
-
-    Keyword arguments:
-    :param vertex_type: dictionary with key: Vertex, value: The type of vertex (To be assigned)
-    :param v_a: Vertex before v_b
-    :param v_b: Vertex after v_a and before v_c, that is to be assigned a type
-    :param v_c: Vertex after v_b
-
-    We distinguish 5 types of polygon vertices (1-4 'turn' vertices):
-    1. "start vertex" : If its two neighbors lie below it and the interior angle is less than 180
-    2. "split vertex" : If its two neighbors lie below it and the interior angle is greater than 180
-    3. "end vertex" : If its two neighbors lie above it and the interior angle is less than 180
-    4. "merge vertex" : If its two neighbors lie above it and the interior angle is greater than 180
-    5. "regular vertex" : Not 'turn' vertices. (not any of the 1-4)
-    """
-    if (angle_between_points_ccw(v_a.coords, v_b.coords, v_c.coords) < 180
-            and v_b.is_above_of(v_a) and v_b.is_above_of(v_c)):
-        vertex_type[v_b] = "start vertex"
-    elif (angle_between_points_ccw(v_a.coords, v_b.coords, v_c.coords) > 180
-          and v_b.is_above_of(v_a) and v_b.is_above_of(v_c)):
-        vertex_type[v_b] = "split vertex"
-    elif (angle_between_points_ccw(v_a.coords, v_b.coords, v_c.coords) < 180
-          and (not v_b.is_above_of(v_a)) and (not v_b.is_above_of(v_c))):
-        vertex_type[v_b] = "end vertex"
-    elif (angle_between_points_ccw(v_a.coords, v_b.coords, v_c.coords) > 180
-          and (not v_b.is_above_of(v_a)) and (not v_b.is_above_of(v_c))):
-        vertex_type[v_b] = "merge vertex"
-    else:
-        vertex_type[v_b] = "regular vertex"
+                raise ValueError('Should not reach this ever...')
 
 
 def triangulate_monotone_polygon(d, f):
@@ -319,7 +265,6 @@ def triangulate_polygon(polygon: Dcel):
     :param poly: A simple polygon to be triangulated
     :return: the DCEL storing the triangulated polygon
     """
-    monotonize(polygon)
     faces = polygon.faces.copy()  # because we are going to add faces
     for f in faces:
         if f.boundary_edge is not None:
@@ -365,28 +310,6 @@ def left_right_chains(f, top_v, bot_v):
             break
 
     return left_chain, right_chain
-
-
-def angle_between_points_ccw(a, b, c):
-    """ Given points a,b,c return the angle (in degrees) abc in respect to ccw rotation.
-    (In other words, slightly abusing correct terminology, we can think that we move from a to b to c and the angle
-    abc this function returns is always the one to left of us!)
-
-    Keyword arguments:
-    :param a: coords of the form (x,y). Point before b.
-    :param b: coords of the form (x,y). Point after a and before c.
-    :param c: coords of the form (x,y). Point after a.
-    :return: The angle (in degrees) abc in respect to ccw rotation.
-    """
-    ba = array(a) - array(b)  # vector from b to a
-    bc = array(c) - array(b)  # vector from b to c
-    if ccw(a, b, c):  # if abc is counter-clockwise then the angle is 0-179.99... and all is good
-        # Note: Due to floating-point presicion dot() can return 1.0000000000000002 so we have to be safe
-        return rad2deg(arccos(clip(dot(ba, bc) / (norm(ba) * norm(bc)), -1, 1)))
-    # abc is not ccw, thus the angle is reflex. Notice we (mod 360) and that is because if points are collinear
-    # we want 0 degrees and NOT 360 degrees.
-    # Note: Due to floating-point presicion dot() can return 1.0000000000000002 so we have to be safe
-    return (360 - rad2deg(arccos(clip(dot(ba, bc) / (norm(ba) * norm(bc)), -1, 1)))) % 360
 
 
 def ccw(a, b, c):

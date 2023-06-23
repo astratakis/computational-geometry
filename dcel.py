@@ -1,4 +1,5 @@
 from shapely.geometry import polygon
+from shapely.geometry.polygon import Polygon
 from itertools import pairwise
 
 import matplotlib.pyplot as plt
@@ -69,46 +70,23 @@ class Edge:
 
 class Dcel:
 
-    def __init__(self):
+    def __init__(self, polygon_data: Polygon):
         self.vertices = list()
         self.edges = list()
         self.faces = set()
 
-    def __plot__(self) -> plt.Figure:
-
-        figure = plt.figure()
-        
-        for face in self.faces:
-            if face.boundary_edge is None:
-                continue
-            face_edges = face.get_surrounding_edges()
-
-            x, y = zip(*[face_edges[0].origin.coords] + [face_edges[i].next.origin.coords for i in range(len(face_edges))])
-
-            plt.plot(x, y, '-', color='b')
-
-        return figure
-
-    def build_from_polygon(self, poly):
-        """ Build a dcel from a simple polygon (we assume there are no holes!)
-
-        Keyword arguments:
-        :param poly : A simple polygon
-        """
-
-        # Step 1: Vertex list creation  (Careful: exterior.coords returns a duplicate of the first vertex at the end!)
-        for coords in polygon.orient(poly).exterior.coords[:-1]:  # counter-clockwise traversal of poly vertices
+        for coords in polygon.orient(polygon_data).exterior.coords[:-1]:
             self.vertices.append(Vertex(coords))
 
-        # Step 2: half-edge list creation. Assignment of twins and vertices
-        for v_origin, v_des in pairwise(self.vertices):  # ccw traversal of poly vertices
-            h1 = Edge(v_origin)  # half-edge that bounds the interior face of the polygon
-            h2 = Edge(v_des)  # half-edge that bounds the exterior face of the polygon
+        for v_origin, v_des in pairwise(self.vertices):
+            h1 = Edge(v_origin)
+            h2 = Edge(v_des)
             h1.twin = h2
             h2.twin = h1
-            v_origin.outgoing_edge = h1  # Following the definition of outgoing_edge
+            v_origin.outgoing_edge = h1
             self.edges.append(h1)
             self.edges.append(h2)
+
         # Create half-edge connecting last vertex to the fist vertex (also create the twin)
         h1 = Edge(self.vertices[-1])
         h2 = Edge(self.vertices[0])
@@ -118,11 +96,6 @@ class Dcel:
         self.edges.append(h1)
         self.edges.append(h2)
 
-        # Step 3: Identification of next and prev edges
-        # Notice that in the vertex creation above, following the definition of outgoing_edge, incident edges
-        # are always edges that bound the interior face of the polygon. We use this and easily determine
-        # the next, prev edges bellow.
-        # ccw traversal of poly half-edges (h1, h2 are always twins, and h1 bounds interior of the polygon)
         for h1, h2 in zip(self.edges[0::2], self.edges[1::2]):
             h1_next = h2.origin.outgoing_edge
             h2_prev = h1_next.twin
@@ -147,30 +120,34 @@ class Dcel:
                 break
         self.faces.add(f)
 
-    def insert_diagonal(self, v1, v2, f):
-        """ Insert diagonal v1v2 in the dcel.
+    def __plot__(self) -> plt.Figure:
 
-        Keyword arguments:
-        :param v1 -- Vertex
-        :param v2 -- Vertex
-        :param f -- face that the diagonal v1v2 splits
-        :return: The inserted half-edge from v1 to v2
-        """
+        figure = plt.figure()
+        
+        for face in self.faces:
+            if face.boundary_edge is None:
+                continue
+            face_edges = face.get_surrounding_edges()
 
-        h1 = self.find_Edge_bounding_face_from_origin(v1, f)  # half-edge with origin v1 that bounds face f
-        h2 = self.find_Edge_bounding_face_from_origin(v2, f)  # half-edge with origin v2 that bounds face f
+            x, y = zip(*[face_edges[0].origin.coords] + [face_edges[i].next.origin.coords for i in range(len(face_edges))])
 
-        e1 = Edge(v1)  # half-edge from v1 to v2
-        e2 = Edge(v2)  # half-edge from v2 to v1
+            plt.plot(x, y, '-', color='b')
+
+        return figure
+
+
+    def insert_diagonal(self, v1: Vertex, v2: Vertex, removable_face: Face) -> Edge:
+        
+        h1 = self.find_Edge_bounding_face_from_origin(v1, removable_face)
+        h2 = self.find_Edge_bounding_face_from_origin(v2, removable_face)
+
+        e1 = Edge(v1)
+        e2 = Edge(v2)
         e1.twin = e2
         e2.twin = e1
         self.edges.append(e1)
         self.edges.append(e2)
 
-        # For the following assignments a quick drawing with pen and paper would help to visualize.
-        # TODO: Generalize for complex polygons
-
-        # Step 1: Connect the next/next attributes of the new e1, e2 half-edges to dcel
         e1.next = h2
         e1.prev = h1.prev
         e2.next = h1
@@ -183,16 +160,15 @@ class Dcel:
         h2.prev = e1
 
         # Step 3: Remove the old face (which was split in two) and create the two new faces and link them.
-        f1 = Face()  # face that is bounded by the newly created half-edge e1
-        f2 = Face()  # face that is bounded by the newly created half-edge e2
+        f1 = Face()
+        f2 = Face()
         self.faces.add(f1)
         self.faces.add(f2)
-        self.faces.remove(f)  # O(1) because faces is a set
+        self.faces.remove(removable_face)
 
         f1.boundary_edge = e1
         f2.boundary_edge = e2
 
-        # Loop around face f1 and assign every interior edge its new face
         tmp_Edge = e1
         while True:
             tmp_Edge.interior_face = f1
@@ -200,7 +176,6 @@ class Dcel:
             if tmp_Edge is e1:
                 break
 
-        # Loop around face f2 and assign every interior edge its new face
         tmp_Edge = e2
         while True:
             tmp_Edge.interior_face = f2
