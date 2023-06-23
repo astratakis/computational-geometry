@@ -15,7 +15,7 @@ polygons = gdf['geometry']
 
 print(gdf)
 
-polygon = polygons[90]
+polygon = polygons[92]
 
 all_points = [(polygon.exterior.coords[i][0], polygon.exterior.coords[i][1]) for i in range(len(polygon.exterior.coords))]
 x, y = zip(*all_points)
@@ -29,11 +29,15 @@ plt.show()
 
 monotonize(poly)
 
+print('[DONE]\t\t Monotonized polygon')
+
 figure = poly.__plot__()
 plt.title('Monotonized polygon')
 plt.show()
 
 triangulate_polygon(poly)
+
+print('[DONE]\t\t Triangulated polygon')
 
 figure = poly.__plot__()
 plt.title('Triangulated Polygon')
