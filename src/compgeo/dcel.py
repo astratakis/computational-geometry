@@ -9,9 +9,12 @@ __license__ = "MIT"
 
 class Vertex:
 
-    def __init__(self, coords: tuple[float, float]):
-        self.x = coords[0]
-        self.y = coords[1]
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+    def __str__(self) -> str:
+        return f"({self.x}, {self.y})"
 
 
 class Face:
@@ -44,7 +47,7 @@ class Face:
 
 class Edge:
 
-    def __init__(self, origin: Vertex = None, interior_face: Face = None):
+    def __init__(self, origin: Vertex, interior_face: Face = None):
         self.origin = origin
         self.interior_face = interior_face
         self.twin = None
@@ -55,6 +58,3 @@ class Edge:
         return str(
             self.prev.origin + " --> " + self.origin + " --> " + self.next.origin
         )
-
-    def __repr__(self) -> str:
-        return self.__str__()
