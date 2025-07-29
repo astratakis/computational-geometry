@@ -1,5 +1,5 @@
 """
-    Setup file for compgeo.
+    Setup file for geocomp.
     Use setup.cfg to configure your project.
 
     This file was generated with PyScaffold 4.6.

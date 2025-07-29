@@ -1,8 +1,8 @@
 =======
-compgeo
+geocomp
 =======
 
-This is the documentation of **compgeo**.
+This is the documentation of **geocomp**.
 
 .. note::
 

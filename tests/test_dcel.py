@@ -1,6 +1,6 @@
 import pytest
 
-from compgeo.dcel import *
+from geocomp import *
 
 __author__ = "astratakis"
 __copyright__ = "astratakis"

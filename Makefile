@@ -3,6 +3,6 @@ all:
 	python setup.py install
 
 clean:
-	pip uninstall compgeo -y
+	pip uninstall geocomp -y
 	rm -rf build
 	rm -rf *egg-info

@@ -1,27 +1,27 @@
 .. These are examples of badges you might want to add to your README:
    please update the URLs accordingly
 
-    .. image:: https://api.cirrus-ci.com/github/<USER>/compgeo.svg?branch=main
+    .. image:: https://api.cirrus-ci.com/github/<USER>/geocomp.svg?branch=main
         :alt: Built Status
-        :target: https://cirrus-ci.com/github/<USER>/compgeo
-    .. image:: https://readthedocs.org/projects/compgeo/badge/?version=latest
+        :target: https://cirrus-ci.com/github/<USER>/geocomp
+    .. image:: https://readthedocs.org/projects/geocomp/badge/?version=latest
         :alt: ReadTheDocs
-        :target: https://compgeo.readthedocs.io/en/stable/
-    .. image:: https://img.shields.io/coveralls/github/<USER>/compgeo/main.svg
+        :target: https://geocomp.readthedocs.io/en/stable/
+    .. image:: https://img.shields.io/coveralls/github/<USER>/geocomp/main.svg
         :alt: Coveralls
-        :target: https://coveralls.io/r/<USER>/compgeo
-    .. image:: https://img.shields.io/pypi/v/compgeo.svg
+        :target: https://coveralls.io/r/<USER>/geocomp
+    .. image:: https://img.shields.io/pypi/v/geocomp.svg
         :alt: PyPI-Server
-        :target: https://pypi.org/project/compgeo/
-    .. image:: https://img.shields.io/conda/vn/conda-forge/compgeo.svg
+        :target: https://pypi.org/project/geocomp/
+    .. image:: https://img.shields.io/conda/vn/conda-forge/geocomp.svg
         :alt: Conda-Forge
-        :target: https://anaconda.org/conda-forge/compgeo
-    .. image:: https://pepy.tech/badge/compgeo/month
+        :target: https://anaconda.org/conda-forge/geocomp
+    .. image:: https://pepy.tech/badge/geocomp/month
         :alt: Monthly Downloads
-        :target: https://pepy.tech/project/compgeo
+        :target: https://pepy.tech/project/geocomp
     .. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter
         :alt: Twitter
-        :target: https://twitter.com/compgeo
+        :target: https://twitter.com/geocomp
 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
@@ -30,7 +30,7 @@
 |
 
 =======
-compgeo
+geocomp
 =======
 
 
